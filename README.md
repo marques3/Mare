@@ -1,53 +1,53 @@
 # MARÉ Platform — NestJS + TypeScript + MySQL
 
-Base funcional para evoluir o MARÉ para uma plataforma de surf na Costa Vicentina. **Sem PHP.** Este projeto é independente do protótipo privado publicado no Sites e não altera as suas permissões.
+A working foundation for developing MARÉ into a surf platform for the Costa Vicentina. **No PHP.** This project is independent of the private prototype published through Sites and does not change its permissions.
 
-## Incluído
+## Included
 
-- Node.js 24, NestJS 12 e TypeScript com verificação estrita.
-- MySQL 8.4 LTS, TypeORM e migrações explícitas. `synchronize` está desligado.
-- Interface original PT/EN, agora servida pelo backend. A escolha de idioma mantém-se.
-- Registo, login, logout e consulta da conta. Passwords com scrypt e sessões opacas revogáveis: cookie HttpOnly; só o hash do token é armazenado.
-- Perfil, idioma, preferências de avisos, favoritos e sessões guardadas em MySQL para utilizadores autenticados.
-- Consulta das 11 praias, previsões centralizadas, cache persistente de 30 minutos e proteção contra pedidos duplicados simultâneos numa instância.
-- Fallback explícito para cache desatualizada, no máximo 3 horas. Sem inventar valores quando a fonte falha.
-- Motor de sugestões em TypeScript no **servidor**: duas horas futuras com luz, limites cumpridos em ambas, compatibilidade mínima de 60 e seleção sem sobreposições.
-- Validação de pedidos, limitação de pedidos, proteção por origem, headers de segurança, health checks e documentação Swagger.
-- Docker Compose e testes automatizados, incluindo teste de integração MySQL com duas contas distintas.
+- Node.js 24, NestJS 12, and TypeScript with strict type checking.
+- MySQL 8.4 LTS, TypeORM, and explicit migrations. `synchronize` is disabled.
+- The original PT/EN interface, now served by the backend. The selected language is preserved.
+- Registration, login, logout, and account details. Passwords are hashed with scrypt, and sessions use revocable opaque tokens: an HttpOnly cookie is set, and only the token hash is stored.
+- Profiles, language, alert preferences, favorites, and saved sessions stored in MySQL for authenticated users.
+- Access to all 11 beaches, centralized forecasts, a persistent 30-minute cache, and protection against duplicate concurrent requests within a single instance.
+- Explicit fallback to stale cached data, up to 3 hours old. No values are fabricated when the source fails.
+- A TypeScript recommendation engine running on the **server**: two future daylight hours, limits met in both hours, a minimum compatibility score of 60, and non-overlapping selections.
+- Request validation, rate limiting, origin protection, security headers, health checks, and Swagger documentation.
+- Docker Compose and automated tests, including a MySQL integration test with two separate accounts.
 
-## Arranque mais simples — Docker Desktop
+## Easiest setup — Docker Desktop
 
-Pré-requisitos: Node.js 24 para gerar a configuração e Docker Desktop com Docker Compose. No Windows, pode ser executado num terminal WSL com integração Docker ativa.
+Prerequisites: Node.js 24 to generate the configuration, and Docker Desktop with Docker Compose. On Windows, you can run this from a WSL terminal with Docker integration enabled.
 
 ```bash
 node scripts/init-env.mjs
 docker compose up --build
 ```
 
-O primeiro comando cria `.env` com passwords aleatórias. Recusa substituir um ficheiro existente. O Compose inicia MySQL, aplica as migrações num processo separado e inicia a aplicação.
+The first command creates `.env` with random passwords. It refuses to overwrite an existing file. Compose starts MySQL, applies migrations in a separate process, and starts the application.
 
-- Site: http://localhost:3000
+- Website: http://localhost:3000
 - API: http://localhost:3000/api
 - Swagger: http://localhost:3000/api/docs
-- Disponibilidade da base de dados: http://localhost:3000/api/health/ready
+- Database readiness: http://localhost:3000/api/health/ready
 
-Abre **Conta** para registar um utilizador. Quando tens sessão iniciada, perfil, favoritos e plano de surf ficam associados à tua conta. Os visitantes sem conta continuam a ter preferências locais. O registo inicial importa o perfil atual; os favoritos e sessões anónimos não são importados automaticamente. No login, os dados da conta substituem a vista local.
+Open **Account** (or **Conta** in the Portuguese interface) to register a user. Once you are signed in, your profile, favorites, and surf plan are associated with your account. Visitors without an account continue to use local preferences. Initial registration imports the current profile; anonymous favorites and sessions are not imported automatically. On login, account data replaces the local view.
 
-O Compose é uma configuração de **desenvolvimento local**, com as portas limitadas a `127.0.0.1`. Usa um volume persistente para os dados. Alterar a password no `.env` depois de criar o volume não altera automaticamente a password já existente no MySQL.
+Compose is configured for **local development**, with ports bound to `127.0.0.1`. It uses a persistent volume for data. Changing the password in `.env` after creating the volume does not automatically change the existing MySQL password.
 
-## Desenvolvimento com Node no terminal
+## Development with Node in the terminal
 
 ```bash
 nvm use
 npm ci
 node scripts/init-env.mjs
-# Se o .env já existir, omite o comando anterior.
+# Skip the previous command if .env already exists.
 docker compose up -d db
 npm run db:migrate
 npm run start:dev
 ```
 
-Também podes usar um MySQL 8.4 existente: configura `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER` e `MYSQL_PASSWORD` no `.env`. Se mudares a porta do site, atualiza também `APP_ORIGIN` para a origem exata, sem barra final.
+You can also use an existing MySQL 8.4 instance: configure `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` in `.env`. If you change the website port, also update `APP_ORIGIN` to the exact origin, without a trailing slash.
 
 ```bash
 npm run typecheck
@@ -56,43 +56,43 @@ npm run build
 npm start
 ```
 
-Não é necessário Nest CLI global. O lockfile permite repetir a instalação com `npm ci`.
+A globally installed Nest CLI is not required. The lockfile allows reproducible installation with `npm ci`.
 
-## Organização
+## Project structure
 
 ```text
 src/
-  auth/             Contas, scrypt e sessões revogáveis
-  profiles/         Perfil, favoritos e plano de sessões por utilizador
-  spots/            Catálogo com identificadores estáveis
-  forecast/         Fonte Open-Meteo e cache MySQL
-  recommendations/  Motor de regras e API de sugestões
-  database/         Entidades, configuração e migrações
-  common/           Configuração, validação e proteção HTTP
-  health/           Liveness e readiness
-public/             Interface PT/EN, sem chamadas diretas à fonte meteorológica
-test/               Testes unitários, HTTP e integração
+  auth/             Accounts, scrypt, and revocable sessions
+  profiles/         Per-user profiles, favorites, and session plans
+  spots/            Catalog with stable identifiers
+  forecast/         Open-Meteo provider and MySQL cache
+  recommendations/  Rules engine and recommendations API
+  database/         Entities, configuration, and migrations
+  common/           Configuration, validation, and HTTP protection
+  health/           Liveness and readiness
+public/             PT/EN interface, with no direct calls to the weather provider
+test/               Unit, HTTP, and integration tests
 ```
 
-## API principal
+## Main API
 
-| Método | Rota | Autenticação | Função |
+| Method | Route | Authentication | Purpose |
 |---|---|---|---|
-| POST | `/api/auth/register` | Não | Criar conta e sessão |
-| POST | `/api/auth/login` | Não | Iniciar sessão |
-| POST | `/api/auth/logout` | Cookie, se existir | Revogar a sessão |
-| GET | `/api/auth/me` | Sim | Consultar utilizador |
-| GET | `/api/spots` | Não | Listar praias |
-| GET | `/api/spots/:id` | Não | Consultar praia |
-| GET | `/api/forecast` | Não | Previsão e estado de atualização |
-| POST | `/api/recommendations` | Não | Comparar condições com perfil |
-| GET, PUT | `/api/me/profile` | Sim | Ler/guardar preferências |
-| GET | `/api/me/favorites` | Sim | Listar favoritos |
-| PUT, DELETE | `/api/me/favorites/:spotId` | Sim | Guardar/remover favorito |
-| GET, POST | `/api/me/sessions` | Sim | Listar/guardar sessões |
-| DELETE | `/api/me/sessions/:id` | Sim | Remover sessão própria |
+| POST | `/api/auth/register` | No | Create an account and session |
+| POST | `/api/auth/login` | No | Sign in |
+| POST | `/api/auth/logout` | Cookie, if present | Revoke the session |
+| GET | `/api/auth/me` | Yes | Retrieve the current user |
+| GET | `/api/spots` | No | List beaches |
+| GET | `/api/spots/:id` | No | Retrieve a beach |
+| GET | `/api/forecast` | No | Retrieve forecasts and freshness status |
+| POST | `/api/recommendations` | No | Compare conditions against a profile |
+| GET, PUT | `/api/me/profile` | Yes | Read/save preferences |
+| GET | `/api/me/favorites` | Yes | List favorites |
+| PUT, DELETE | `/api/me/favorites/:spotId` | Yes | Save/remove a favorite |
+| GET, POST | `/api/me/sessions` | Yes | List/save sessions |
+| DELETE | `/api/me/sessions/:id` | Yes | Remove one of the user's own sessions |
 
-Exemplo do corpo de `/api/recommendations`:
+Example request body for `/api/recommendations`:
 
 ```json
 {
@@ -106,50 +106,50 @@ Exemplo do corpo de `/api/recommendations`:
 }
 ```
 
-A resposta inclui `candidates`, `suggested`, `forecastFetchedAt`, `stale`, `timezone`, `method: "rules-v1"` e `localQualityValidated: false`. A interface deixa de calcular as pontuações no navegador. As previsões mantêm as unidades originais: metros, segundos e km/h.
+The response includes `candidates`, `suggested`, `forecastFetchedAt`, `stale`, `timezone`, `method: "rules-v1"`, and `localQualityValidated: false`. The interface no longer calculates scores in the browser. Forecasts retain their original units: meters, seconds, and km/h.
 
-O horário das sessões é hora civil **Europe/Lisbon**, no formato `YYYY-MM-DDTHH:00`. A metadata identifica explicitamente o fuso. As horas da madrugada próximas da mudança de horário não são usadas: as sugestões começam às 07h e acabam até às 20h, sempre dentro do período diurno.
+Session times use **Europe/Lisbon** local time, in `YYYY-MM-DDTHH:00` format. The metadata explicitly identifies the time zone. Early-morning hours around daylight saving time transitions are not used: suggestions start no earlier than 07:00 and finish by 20:00, always within daylight hours.
 
-Para guardar uma sessão, envia apenas `spotId` e `startTime`, tal como recebidos nas sugestões. O servidor volta a verificar a compatibilidade com o perfil e deriva os valores guardados; não aceita uma pontuação arbitrária enviada pelo cliente.
+To save a session, send only `spotId` and `startTime`, exactly as received in the recommendations. The server rechecks compatibility with the profile and derives the saved values; it does not accept an arbitrary client-supplied score.
 
-## Testes MySQL e CI
+## MySQL tests and CI
 
-Os testes normais usam fixtures identificadas e não precisam de MySQL ou de chamadas externas. Os testes MySQL não são executados automaticamente no comando normal e exigem uma base de dados dedicada, com migrações aplicadas.
+Standard tests use clearly identified fixtures and do not require MySQL or external calls. MySQL tests do not run as part of the standard test command and require a dedicated database with migrations applied.
 
 ```bash
-# Configura MYSQL_* para uma base de dados exclusiva de testes.
+# Configure MYSQL_* for a database used exclusively for testing.
 npm run db:migrate
 MYSQL_INTEGRATION=1 npm run test:integration
 ```
 
-No PowerShell, define a variável com `$env:MYSQL_INTEGRATION = '1'`. O teste usa dados meteorológicos de teste, cria duas contas e confirma isolamento, persistência, cookies e revogação do login. O workflow `.github/workflows/ci.yml` fornece MySQL 8.4 e executa estes testes. Não foi criada nenhuma ligação ao teu GitHub nem executado um workflow remoto.
+In PowerShell, set the variable with `$env:MYSQL_INTEGRATION = '1'`. The test uses weather fixtures, creates two accounts, and checks isolation, persistence, cookies, and session revocation on logout. The `.github/workflows/ci.yml` workflow provides MySQL 8.4 and runs these tests. No connection to your GitHub account has been created, and no remote workflow has been run.
 
-## Dados meteorológicos
+## Weather data
 
-Sem `OPEN_METEO_API_KEY`, a base usa os endpoints públicos **apenas para prototipagem não comercial**. Antes de vender subscrições, contrata acesso comercial apropriado ou escolhe outra fonte devidamente licenciada. Com uma chave configurada, o provider usa os endpoints de cliente; valida com o fornecedor o plano, os modelos, a cobertura marítima e as condições de utilização.
+Without `OPEN_METEO_API_KEY`, this foundation uses the public endpoints **for non-commercial prototyping only**. Before selling subscriptions, obtain suitable commercial access or choose another appropriately licensed source. When a key is configured, the provider uses the customer endpoints; confirm the plan, models, marine coverage, and terms of use with the provider.
 
-A chave é usada somente no servidor. Não é escrita no frontend, nas respostas ou nos logs. A altura apresentada é altura significativa **ao largo**; a aplicação não prevê a altura de rebentação, marés, correntes, abrigo real, fundos ou lotação. A avaliação é uma regra inicial e não um modelo de IA treinado.
+The key is used only on the server. It is not written to the frontend, responses, or logs. The displayed wave height is **offshore significant wave height**; the application does not predict breaking wave height, tides, currents, actual shelter, seabed conditions, or crowd levels. The assessment uses an initial rule set, not a trained AI model.
 
-A cache é partilhada por todos os visitantes **numa única instância**. Em várias réplicas, a cache MySQL é partilhada, mas o controlo de pedidos simultâneos e o limitador continuam a ser locais ao processo. Antes de escalar, acrescenta coordenação/limitação partilhada, por exemplo Redis.
+The cache is shared by all visitors **within a single instance**. Across multiple replicas, the MySQL cache is shared, but concurrent request coordination and rate limiting remain local to each process. Before scaling, add shared coordination and rate limiting, for example with Redis.
 
-## Caminho para produção
+## Path to production
 
-1. Cria um repositório teu a partir deste código e liga o workflow de CI.
-2. Provisiona alojamento Node/Docker e MySQL, separados dos ambientes locais. Cria utilizadores distintos para migrações e execução, com privilégios adequados.
-3. Configura o ambiente real: `NODE_ENV=production`, `APP_ORIGIN=https://teu-dominio`, credenciais fortes, chave comercial e ligação MySQL com TLS. Se necessário, aponta `MYSQL_SSL_CA_FILE` para a CA do fornecedor.
-4. Constrói a imagem. Aplica as migrações como tarefa de release e arranca `node dist/main.js` atrás de um reverse proxy HTTPS. O cookie é Secure em produção. O Compose incluído força development para uso local e deve ser adaptado antes de qualquer exposição pública.
-5. Define `ENABLE_DOCS=false` em produção, configura backups com restauro testado e monitoriza `/api/health/ready`.
-6. Ajusta o trust proxy para a topologia conhecida e limitação partilhada antes de colocar várias réplicas. Não confies indiscriminadamente em `X-Forwarded-For`.
+1. Create your own repository from this code and enable the CI workflow.
+2. Provision Node/Docker hosting and MySQL separately from local environments. Create separate users for migrations and runtime access, with appropriate privileges.
+3. Configure the production environment: `NODE_ENV=production`, `APP_ORIGIN=https://your-domain`, strong credentials, a commercial API key, and a MySQL connection using TLS. If necessary, set `MYSQL_SSL_CA_FILE` to the provider's CA certificate.
+4. Build the image. Apply migrations as a release task and run `node dist/main.js` behind an HTTPS reverse proxy. The cookie is Secure in production. The included Compose configuration forces development mode for local use and must be adapted before any public exposure.
+5. Set `ENABLE_DOCS=false` in production, configure backups with tested restores, and monitor `/api/health/ready`.
+6. Configure trust proxy for your known topology and add shared rate limiting before deploying multiple replicas. Do not blindly trust `X-Forwarded-For`.
 
-Este projeto não é compatível com o runtime Cloudflare Workers do Sites por depender de Node e de uma ligação TCP MySQL. O protótipo publicado mantém-se independente. Nenhuma infraestrutura paga foi criada ou publicada durante esta montagem.
+This project is not compatible with the Sites Cloudflare Workers runtime because it depends on Node and a MySQL TCP connection. The published prototype remains independent. No paid infrastructure was created or deployed while preparing this project.
 
-## Ainda por implementar antes de vender
+## Still required before selling subscriptions
 
-- Verificação de email, recuperação de password, gestão/remoção de conta e tratamento dos direitos dos utilizadores.
-- Pagamentos e subscrições Stripe, webhooks verificados e idempotentes, autorização premium no backend e cancelamentos.
-- Recolha agendada de previsões, fila de alertas, deduplicação, horários e envio real de email/push. Guardar preferências de avisos **não** ativa entrega em background nesta versão.
-- Histórico de previsões emitidas, observações locais e avaliação/calibração por praia. A tabela atual guarda apenas a cache mais recente, não um dataset de treino.
-- Termos, privacidade, faturação e enquadramento fiscal do serviço.
-- Revisão de segurança e operação antes de expor contas a clientes reais. O registo pode revelar que um email já existe; os limites atuais são por IP/processo.
+- Email verification, password recovery, account management/deletion, and handling of users' rights.
+- Stripe payments and subscriptions, verified and idempotent webhooks, backend premium authorization, and cancellations.
+- Scheduled forecast collection, an alert queue, deduplication, scheduling, and actual email/push delivery. Saving alert preferences **does not** enable background delivery in this version.
+- Historical issued forecasts, local observations, and per-beach assessment/calibration. The current table stores only the latest cache, not a training dataset.
+- Terms of service, privacy, invoicing, and the service's tax arrangements.
+- Security and operational review before exposing accounts to real customers. Registration may reveal that an email address already exists; current limits are per IP/process.
 
-O próximo incremento recomendado é concluir o ciclo de conta (verificação e recuperação), depois adicionar observações locais e alertas por email. As subscrições podem ser ligadas quando a utilidade das sugestões estiver validada.
+The recommended next increment is to complete the account lifecycle, including verification and recovery, then add local observations and email alerts. Subscriptions can be connected once the usefulness of the recommendations has been validated.
