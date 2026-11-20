@@ -1,0 +1,2 @@
+/* Only presentation defaults and window selection remain client-side. Scoring runs in NestJS. */
+const MareEngine={defaults:{beginner:{min:.3,max:1.1,wind:15},intermediate:{min:.7,max:2,wind:22},advanced:{min:1,max:3.5,wind:28}},pick(candidates,limit=3){const selected=[];for(const c of [...candidates].sort((a,b)=>b.score-a.score||a.key.localeCompare(b.key)||a.i-b.i)){if(selected.some(s=>s.date===c.date&&c.hour<s.hour+2&&s.hour<c.hour+2))continue;selected.push(c);if(selected.length===limit)break}return selected}};

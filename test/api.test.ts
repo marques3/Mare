@@ -1,0 +1,11 @@
+import 'reflect-metadata';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+import { RecommendationsController } from '../src/recommendations/recommendations.controller';
+import { RecommendationsService } from '../src/recommendations/recommendations.service';
+import { DEFAULT_PROFILE } from '../src/database/entities';
+import { configureHttp } from '../src/common/http';
+import { env } from '../src/common/env';
+test('HTTP validation rejects unknown fields and invalid ranges; cross-origin writes are denied',async()=>{let called=0;const module=await Test.createTestingModule({controllers:[RecommendationsController],providers:[{provide:RecommendationsService,useValue:{get:async()=>{called++;return {suggested:[]}}}}]}).compile();const app=module.createNestApplication();configureHttp(app);await app.init();try{const api=request(app.getHttpServer());await api.post('/api/recommendations').set('Origin',env.APP_ORIGIN).send({...DEFAULT_PROFILE,admin:true}).expect(400);await api.post('/api/recommendations').set('Origin','https://untrusted.example').send(DEFAULT_PROFILE).expect(403);await api.post('/api/recommendations').set('Origin',env.APP_ORIGIN).send({...DEFAULT_PROFILE,min:'0.7'}).expect(400);await api.post('/api/recommendations').set('Origin',env.APP_ORIGIN).send(DEFAULT_PROFILE).expect(200);assert.equal(called,1)}finally{await app.close()}});

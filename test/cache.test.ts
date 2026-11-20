@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Repository } from 'typeorm';
+import { ForecastCacheEntity } from '../src/database/entities';
+import { ForecastService,FRESH_TTL_MS,MAX_STALE_MS } from '../src/forecast/forecast.service';
+import { ForecastProvider } from '../src/forecast/forecast.provider';
+import { fixture } from './fixture';
+test('concurrent visitors share a single provider request and a persisted snapshot',async()=>{let calls=0,saves=0;const rows={findOneBy:async()=>null,upsert:async()=>{saves++}}as unknown as Repository<ForecastCacheEntity>;const provider={fetch:async()=>{calls++;await new Promise(r=>setTimeout(r,10));return fixture()}}as ForecastProvider;const service=new ForecastService(rows,provider);const [a,b]=await Promise.all([service.get(),service.get()]);await service.get();assert.equal(calls,1);assert.equal(saves,1);assert.equal(a.fetchedAt,b.fetchedAt);assert.equal(a.stale,false);});
+test('provider outages use bounded stale cache with an explicit flag',async()=>{const fetchedAt=new Date(Date.now()-FRESH_TTL_MS-1000);const rows={findOneBy:async()=>({payload:fixture(),fetchedAt})}as unknown as Repository<ForecastCacheEntity>;const provider={fetch:async()=>{throw Error('unavailable')}}as unknown as ForecastProvider;const result=await new ForecastService(rows,provider).get();assert.equal(result.stale,true);assert.equal(result.fetchedAt,fetchedAt.toISOString())});
+test('forecasts older than the stale limit are never offered as current',async()=>{const rows={findOneBy:async()=>({payload:fixture(),fetchedAt:new Date(Date.now()-MAX_STALE_MS-1000)})}as unknown as Repository<ForecastCacheEntity>;const provider={fetch:async()=>{throw Error('unavailable')}}as unknown as ForecastProvider;await assert.rejects(()=>new ForecastService(rows,provider).get(),/FORECAST_UNAVAILABLE/)});

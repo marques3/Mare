@@ -1,0 +1,12 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { generateCandidates,pickSessions,scoreConditions,localTime } from '../src/recommendations/engine';
+import { DEFAULT_PROFILE } from '../src/database/entities';
+import { SpotsService } from '../src/spots/spots.service';
+import { fixture } from './fixture';
+const values={height:1.2,period:11,wind:7,windDir:90,waveDir:270};const spots=new SpotsService().list();
+test('missing observations and out-of-range conditions never become a match',()=>{assert.equal(scoreConditions({...values,height:null},DEFAULT_PROFILE,270),null);assert.equal(scoreConditions({...values,wind:60},DEFAULT_PROFILE,270),null);assert.equal(scoreConditions({...values,height:4},DEFAULT_PROFILE,270),null);assert.equal(scoreConditions({...values,period:NaN},DEFAULT_PROFILE,270),null)});
+test('offshore and onshore are differentiated for the beach orientation',()=>{assert.ok(scoreConditions(values,DEFAULT_PROFILE,270)!.score>scoreConditions({...values,windDir:270},DEFAULT_PROFILE,270)!.score)});
+test('sessions must fit daylight, future time and morning availability',()=>{const result=generateCandidates(fixture(),spots,{...DEFAULT_PROFILE,availability:'morning'},new Date('2026-11-12T09:30:00Z'));assert.ok(result.length);assert.ok(result.every(c=>c.hour>=8&&c.hour+2<=12));assert.ok(result.every(c=>c.key>'2026-11-12T09:30'));assert.equal(localTime(new Date('2026-07-12T09:30:00Z')),'2026-07-12T10:30')});
+test('both hours must meet limits, and missing wind must not score as zero',()=>{const f=fixture();const idx=f.data[0].marine.time.indexOf('2026-11-12T10:00');f.data[0].marine.wave_height[idx]=5;f.data[0].weather.wind_speed_10m[idx+3]=null;const result=generateCandidates(f,spots,DEFAULT_PROFILE,new Date('2026-11-12T07:00:00Z')).filter(c=>c.i===0&&c.d===0);assert.ok(!result.some(c=>c.hour===9||c.hour===10||c.hour===12||c.hour===13));});
+test('selected sessions do not overlap and chronological ties are deterministic',()=>{const candidates=generateCandidates(fixture(),spots,DEFAULT_PROFILE,new Date('2026-11-12T07:00:00Z'));const picked=pickSessions(candidates);assert.equal(picked.length,3);for(const [i,a]of picked.entries())for(const b of picked.slice(i+1))assert.ok(a.date!==b.date||a.hour+2<=b.hour||b.hour+2<=a.hour);assert.ok(picked.every(c=>c.score>=60))});
